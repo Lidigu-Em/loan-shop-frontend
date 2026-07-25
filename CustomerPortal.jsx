@@ -3,9 +3,11 @@ import { apiClient } from './apiClient';
 import { Package, ChevronRight, Clock, RefreshCw, Printer } from 'lucide-react';
 
 export default function CustomerPortal() {
+    const [activeTab, setActiveTab] = useState('apply');
     const [profile, setProfile] = useState(null);
     const [products, setProducts] = useState([]);
     const [applications, setApplications] = useState([]);
+    const [repayments, setRepayments] = useState([]);
 
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [requestedAmount, setRequestedAmount] = useState('');
@@ -22,6 +24,8 @@ export default function CustomerPortal() {
             setProducts(prods || []);
             const apps = await apiClient('applications');
             setApplications(apps || []);
+            const reps = await apiClient('repayments/my');
+            setRepayments(reps || []);
         } catch (e) {
             console.error(e);
         }
@@ -112,8 +116,77 @@ export default function CustomerPortal() {
                 </div>
             </div>
 
+            {/* ─── Tabs Navigation ─── */}
+            <div className="flex bg-slate-50 p-1.5 rounded-2xl border border-slate-100 print:hidden overflow-x-auto">
+                <button
+                    onClick={() => setActiveTab('apply')}
+                    className={`flex-1 min-w-[120px] py-2.5 px-4 text-sm font-bold rounded-xl transition-all ${activeTab === 'apply' ? 'bg-white shadow-sm text-sky-600' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                    <Package size={16} className="inline-block mr-2" /> Apply
+                </button>
+                <button
+                    onClick={() => setActiveTab('requests')}
+                    className={`flex-1 min-w-[120px] py-2.5 px-4 text-sm font-bold rounded-xl transition-all ${activeTab === 'requests' ? 'bg-white shadow-sm text-sky-600' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                    <Clock size={16} className="inline-block mr-2" /> Requests
+                </button>
+                <button
+                    onClick={() => setActiveTab('repayments')}
+                    className={`flex-1 min-w-[120px] py-2.5 px-4 text-sm font-bold rounded-xl transition-all ${activeTab === 'repayments' ? 'bg-white shadow-sm text-sky-600' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                    <span className="inline-block mr-2 text-lg leading-none">💳</span> Payments
+                </button>
+            </div>
+
+            {/* ─── Tab Content ─── */}
+
+            {/* ─── Apply for Loan (hidden when printing) ─── */}
+            <div className={`print:hidden bg-white p-6 rounded-3xl border border-slate-100 shadow-sm ${activeTab === 'apply' ? 'block' : 'hidden'}`}>
+                <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <Package className="text-sky-500" /> Apply for a Product
+                </h3>
+                {selectedProduct ? (
+                    <form onSubmit={handleApply} className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                        <div className="mb-4">
+                            <p className="text-xs text-sky-600 font-bold tracking-tight uppercase mb-1">SELECTED</p>
+                            <p className="text-lg font-black text-slate-800">{selectedProduct.product_name}</p>
+                            <p className="text-sm text-slate-500">Interest: {selectedProduct.interest_rate}% | Max: KSh {Number(selectedProduct.maximum_loan_amount).toLocaleString()}</p>
+                        </div>
+                        <div className="mb-4">
+                            <label className="block text-xs font-bold text-slate-400 mb-2">HOW MUCH DO YOU NEED? (KSh)</label>
+                            <input
+                                type="number"
+                                value={requestedAmount}
+                                onChange={e => setRequestedAmount(e.target.value)}
+                                max={Math.min(selectedProduct.maximum_loan_amount, profile.maximum_loan_limit)}
+                                className="w-full text-lg p-3 bg-white border border-slate-200 rounded-xl font-black text-slate-700 outline-none focus:border-sky-500 transition-colors"
+                                placeholder="0.00"
+                                required
+                            />
+                            <p className="text-xs text-slate-400 mt-2">Cannot exceed your available limit of KSh {Number(profile.maximum_loan_limit).toLocaleString()}</p>
+                        </div>
+                        <div className="flex gap-3">
+                            <button type="button" onClick={() => setSelectedProduct(null)} className="px-4 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-200 transition-colors">Cancel</button>
+                            <button type="submit" className="flex-1 bg-sky-500 text-white rounded-xl font-bold tracking-wide shadow-md shadow-sky-500/30 hover:bg-sky-600 transition-colors py-3">Submit Request</button>
+                        </div>
+                    </form>
+                ) : (
+                    <div className="space-y-3">
+                        {products.length === 0 ? <p className="text-slate-400 text-sm">No products available.</p> : products.map(p => (
+                            <div key={p.product_id} onClick={() => setSelectedProduct(p)} className="flex items-center justify-between p-4 bg-slate-50 hover:bg-sky-50 border border-slate-100 hover:border-sky-200 rounded-2xl cursor-pointer transition-all group">
+                                <div>
+                                    <h4 className="font-extrabold text-slate-700 group-hover:text-sky-700">{p.product_name}</h4>
+                                    <p className="text-xs text-slate-400 font-medium">{p.interest_rate}% Interest • {p.repayment_period_months} Months</p>
+                                </div>
+                                <ChevronRight className="text-slate-300 group-hover:text-sky-500" />
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
             {/* ─── Application History (shown always, prints cleanly) ─── */}
-            <div className="bg-white rounded-3xl border border-slate-100 shadow-sm print:shadow-none print:border-slate-300 print:rounded-none">
+            <div className={`bg-white rounded-3xl border border-slate-100 shadow-sm print:shadow-none print:border-slate-300 print:rounded-none ${activeTab === 'requests' ? 'block' : 'hidden print:block'}`}>
                 <div className="p-5 border-b border-slate-100 flex justify-between items-center">
                     <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
                         <Clock size={16} className="text-slate-400" /> Loan Request History
@@ -160,49 +233,42 @@ export default function CustomerPortal() {
                 </div>
             </div>
 
-            {/* ─── Apply for Loan (hidden when printing) ─── */}
-            <div className="print:hidden bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                    <Package className="text-sky-500" /> Apply for a Product
-                </h3>
-                {selectedProduct ? (
-                    <form onSubmit={handleApply} className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
-                        <div className="mb-4">
-                            <p className="text-xs text-sky-600 font-bold tracking-tight uppercase mb-1">SELECTED</p>
-                            <p className="text-lg font-black text-slate-800">{selectedProduct.product_name}</p>
-                            <p className="text-sm text-slate-500">Interest: {selectedProduct.interest_rate}% | Max: KSh {Number(selectedProduct.maximum_loan_amount).toLocaleString()}</p>
-                        </div>
-                        <div className="mb-4">
-                            <label className="block text-xs font-bold text-slate-400 mb-2">HOW MUCH DO YOU NEED? (KSh)</label>
-                            <input
-                                type="number"
-                                value={requestedAmount}
-                                onChange={e => setRequestedAmount(e.target.value)}
-                                max={Math.min(selectedProduct.maximum_loan_amount, profile.maximum_loan_limit)}
-                                className="w-full text-lg p-3 bg-white border border-slate-200 rounded-xl font-black text-slate-700 outline-none focus:border-sky-500 transition-colors"
-                                placeholder="0.00"
-                                required
-                            />
-                            <p className="text-xs text-slate-400 mt-2">Cannot exceed your available limit of KSh {Number(profile.maximum_loan_limit).toLocaleString()}</p>
-                        </div>
-                        <div className="flex gap-3">
-                            <button type="button" onClick={() => setSelectedProduct(null)} className="px-4 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-200 transition-colors">Cancel</button>
-                            <button type="submit" className="flex-1 bg-sky-500 text-white rounded-xl font-bold tracking-wide shadow-md shadow-sky-500/30 hover:bg-sky-600 transition-colors py-3">Submit Request</button>
-                        </div>
-                    </form>
-                ) : (
-                    <div className="space-y-3">
-                        {products.length === 0 ? <p className="text-slate-400 text-sm">No products available.</p> : products.map(p => (
-                            <div key={p.product_id} onClick={() => setSelectedProduct(p)} className="flex items-center justify-between p-4 bg-slate-50 hover:bg-sky-50 border border-slate-100 hover:border-sky-200 rounded-2xl cursor-pointer transition-all group">
-                                <div>
-                                    <h4 className="font-extrabold text-slate-700 group-hover:text-sky-700">{p.product_name}</h4>
-                                    <p className="text-xs text-slate-400 font-medium">{p.interest_rate}% Interest • {p.repayment_period_months} Months</p>
-                                </div>
-                                <ChevronRight className="text-slate-300 group-hover:text-sky-500" />
-                            </div>
+            {/* ─── Repayment History ─── */}
+            <div className={`bg-white rounded-3xl border border-slate-100 shadow-sm print:shadow-none print:border-slate-300 print:rounded-none print:mt-8 ${activeTab === 'repayments' ? 'block' : 'hidden print:block'}`}>
+                <div className="p-5 border-b border-slate-100">
+                    <h3 className="text-base font-bold text-slate-800">💳 Payment History</h3>
+                    <p className="text-xs text-slate-400 mt-0.5">Cash payments recorded by the admin on your behalf.</p>
+                </div>
+                <table className="w-full text-left text-sm">
+                    <thead>
+                        <tr className="bg-slate-50 text-slate-400 text-xs font-bold border-b border-slate-100">
+                            <th className="p-4">PRODUCT</th>
+                            <th className="p-4">DATE</th>
+                            <th className="p-4 text-right">PAID (KSh)</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                        {repayments.length === 0 ? (
+                            <tr><td colSpan={3} className="p-6 text-center text-slate-400">No payments recorded yet.</td></tr>
+                        ) : repayments.map(r => (
+                            <tr key={r.repayment_id} className="hover:bg-slate-50/50">
+                                <td className="p-4 font-semibold text-slate-700">{r.application?.product?.product_name || '—'}</td>
+                                <td className="p-4 text-slate-400 text-xs">{r.payment_date ? new Date(r.payment_date).toLocaleString() : '—'}</td>
+                                <td className="p-4 text-right font-black text-emerald-600">{Number(r.amount_paid).toLocaleString()}</td>
+                            </tr>
                         ))}
-                    </div>
-                )}
+                    </tbody>
+                    {repayments.length > 0 && (
+                        <tfoot>
+                            <tr className="bg-slate-50 font-black text-slate-800 text-sm border-t border-slate-200">
+                                <td className="p-4" colSpan={2}>Total Paid</td>
+                                <td className="p-4 text-right text-emerald-600">
+                                    KSh {repayments.reduce((s, r) => s + (r.amount_paid || 0), 0).toLocaleString()}
+                                </td>
+                            </tr>
+                        </tfoot>
+                    )}
+                </table>
             </div>
 
         </div>
