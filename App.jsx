@@ -4,6 +4,7 @@ import Dashboard from './Dashboard';
 import Customers from './Customers';
 import Products from './Products';
 import LoanApprovals from './LoanApprovals';
+import Repayments from './Repayments';
 import Reports from './Reports';
 import Profile from './Profile';
 import Navbar from './components/Navbar';
@@ -58,6 +59,7 @@ export default function App() {
             {currentPage === 'customers' && <Customers />}
             {currentPage === 'products' && <Products />}
             {currentPage === 'approvals' && <LoanApprovals />}
+            {currentPage === 'repayments' && <Repayments />}
             {currentPage === 'reports' && <Reports />}
             {currentPage === 'profile' && <Profile />}
           </>

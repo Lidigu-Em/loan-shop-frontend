@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, FileText, Settings, LogOut, PackageSearch, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Settings, LogOut, PackageSearch, ClipboardList, Wallet } from 'lucide-react';
 
 export default function Navbar({ setCurrentPage, currentPage, role }) {
     const adminLinks = [
@@ -7,6 +7,7 @@ export default function Navbar({ setCurrentPage, currentPage, role }) {
         { id: 'customers', icon: Users, label: 'Customers' },
         { id: 'products', icon: PackageSearch, label: 'Product Catalog' },
         { id: 'approvals', icon: ClipboardList, label: 'Loan Approvals' },
+        { id: 'repayments', icon: Wallet, label: 'Repayments' },
         { id: 'reports', icon: FileText, label: 'Ledger Reports' },
         { id: 'profile', icon: Settings, label: 'Preferences' }
     ];
