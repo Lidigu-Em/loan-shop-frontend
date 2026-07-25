@@ -24,7 +24,8 @@ export default function Login({ setSession }) {
         ? { username: cleanUsername, password, phone, firstName: name.split(' ')[0] || '', lastName: name.split(' ').slice(1).join(' ') || '' }
         : { username: cleanUsername, password };
 
-      const response = await fetch(`http://localhost:8080/api/auth/${endpoint}`, {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+      const response = await fetch(`${API_BASE_URL}/api/auth/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
