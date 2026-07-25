@@ -6,7 +6,8 @@ export const apiClient = async (endpoint, options = {}) => {
         ...options.headers,
     };
 
-    const response = await fetch(`http://localhost:8080/api/${endpoint}`, {
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+    const response = await fetch(`${API_BASE_URL}/api/${endpoint}`, {
         ...options,
         headers,
     });
