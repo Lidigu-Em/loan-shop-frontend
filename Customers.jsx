@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from './apiClient';
 import CustomerEditModal from './CustomerEditModal';
-import { Users, Pencil, ShieldCheck } from 'lucide-react';
+import { Users, Pencil, Trash2 } from 'lucide-react';
 
 export default function Customers() {
   const [customers, setCustomers] = useState([]);
@@ -21,6 +21,19 @@ export default function Customers() {
       console.error(e);
     }
     setLoading(false);
+  };
+
+  const handleDelete = async (id, name) => {
+    if (!window.confirm(`Are you absolutely sure you want to permanently delete customer ${name} and all their records (loans, applications, repayments)? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await apiClient(`customers/${id}`, { method: 'DELETE' });
+      fetchCustomers();
+    } catch (e) {
+      alert(`Error deleting customer: ${e.message}`);
+    }
   };
 
   return (
@@ -75,12 +88,21 @@ export default function Customers() {
                     )}
                   </td>
                   <td className="p-4 text-center">
-                    <button
-                      onClick={() => setEditingCustomer(c)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-sky-600 bg-sky-50 hover:bg-sky-100 rounded-xl transition-all"
-                    >
-                      <Pencil size={12} /> Edit / Set Limit
-                    </button>
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => setEditingCustomer(c)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-sky-600 bg-sky-50 hover:bg-sky-100 rounded-xl transition-all"
+                      >
+                        <Pencil size={12} /> Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(c.customer_id, `${c.first_name} ${c.last_name}`.trim())}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl transition-all"
+                        title="Permanently Delete Customer"
+                      >
+                        <Trash2 size={12} /> Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

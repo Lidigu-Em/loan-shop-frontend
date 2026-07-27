@@ -91,8 +91,8 @@ export default function Reports() {
           return (
             <button key={t.id} onClick={() => setActiveReport(t.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all ${activeReport === t.id
-                  ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20'
-                  : 'bg-white text-slate-500 border border-slate-200 hover:border-sky-300'
+                ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20'
+                : 'bg-white text-slate-500 border border-slate-200 hover:border-sky-300'
                 }`}>
               <Icon size={13} />{t.label}
             </button>
@@ -149,8 +149,8 @@ export default function Reports() {
                     <td className="p-4 text-right font-black text-sky-600">KSh {Number(a.requested_amount).toLocaleString()}</td>
                     <td className="p-4 text-center">
                       <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${a.status === 'Pending' ? 'bg-amber-100 text-amber-700' :
-                          a.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' :
-                            'bg-rose-100 text-rose-600'
+                        a.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' :
+                          'bg-rose-100 text-rose-600'
                         }`}>{a.status}</span>
                     </td>
                     <td className="p-4 text-slate-400 text-xs">{a.created_at ? new Date(a.created_at).toLocaleDateString() : '—'}</td>
@@ -189,29 +189,46 @@ export default function Reports() {
 
           {/* REPAYMENTS */}
           {activeReport === 'repayments' && (
-            <table className="w-full text-left text-sm">
-              <thead><tr className="bg-slate-50 text-slate-400 text-xs font-bold border-b border-slate-100">
-                <th className="p-4">DATE</th><th className="p-4">CHANNEL</th><th className="p-4 text-right">AMOUNT (KSh)</th>
-              </tr></thead>
-              <tbody className="divide-y divide-slate-50">
-                {repayments.map(r => (
-                  <tr key={r.repayment_id} className="hover:bg-slate-50/50">
-                    <td className="p-4 text-slate-500">{r.payment_date ? new Date(r.payment_date).toLocaleDateString() : '—'}</td>
-                    <td className="p-4">
-                      <span className="bg-slate-100 px-2 py-0.5 rounded-md text-xs font-bold text-slate-700">{r.payment_method || '—'}</span>
-                    </td>
-                    <td className="p-4 text-right font-black text-emerald-600">KSh {Number(r.amount_paid || 0).toLocaleString()}</td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm min-w-[640px]">
+                <thead><tr className="bg-slate-50 text-slate-400 text-xs font-bold border-b border-slate-100">
+                  <th className="p-4">CUSTOMER</th>
+                  <th className="p-4">PRODUCT</th>
+                  <th className="p-4">DATE</th>
+                  <th className="p-4">CHANNEL</th>
+                  <th className="p-4 text-right">AMOUNT (KSh)</th>
+                </tr></thead>
+                <tbody className="divide-y divide-slate-50">
+                  {repayments.map(r => {
+                    const cust = r.application?.customer ?? r.loanApplication?.customer;
+                    const prod = r.application?.product ?? r.loanApplication?.product;
+                    const date = r.payment_date ?? r.paymentDate;
+                    const method = r.payment_method ?? r.paymentMethod;
+                    const paid = r.amount_paid ?? r.amountPaid ?? 0;
+                    return (
+                      <tr key={r.repayment_id ?? r.repaymentId} className="hover:bg-slate-50/50">
+                        <td className="p-4 font-bold text-slate-700">
+                          {cust ? `${cust.first_name ?? ''} ${cust.last_name ?? ''}`.trim() : '—'}
+                        </td>
+                        <td className="p-4 text-slate-500">{prod?.product_name ?? '—'}</td>
+                        <td className="p-4 text-slate-500 text-xs">{date ? new Date(date).toLocaleDateString() : '—'}</td>
+                        <td className="p-4">
+                          <span className="bg-slate-100 px-2 py-0.5 rounded-md text-xs font-bold text-slate-700">{method || '—'}</span>
+                        </td>
+                        <td className="p-4 text-right font-black text-emerald-600">KSh {Number(paid).toLocaleString()}</td>
+                      </tr>
+                    );
+                  })}
+                  {repayments.length === 0 && <tr><td colSpan={5} className="p-8 text-center text-slate-400">No repayments recorded yet.</td></tr>}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-slate-50 font-black text-slate-800 text-sm border-t border-slate-200">
+                    <td className="p-4" colSpan={4}>Total Collected</td>
+                    <td className="p-4 text-right text-emerald-600">KSh {totalRepaid.toLocaleString()}</td>
                   </tr>
-                ))}
-                {repayments.length === 0 && <tr><td colSpan={3} className="p-8 text-center text-slate-400">No repayments recorded yet.</td></tr>}
-              </tbody>
-              <tfoot>
-                <tr className="bg-slate-50 font-black text-slate-800 text-sm border-t border-slate-200">
-                  <td className="p-4" colSpan={2}>Total Collected</td>
-                  <td className="p-4 text-right text-emerald-600">KSh {totalRepaid.toLocaleString()}</td>
-                </tr>
-              </tfoot>
-            </table>
+                </tfoot>
+              </table>
+            </div>
           )}
 
         </div>
