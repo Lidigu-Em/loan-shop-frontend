@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from './apiClient';
-import PaymentModal from './PaymentModal';
 
 export default function Dashboard() {
   const [customers, setCustomers] = useState([]);
-  const [activeLoans, setActiveLoans] = useState([]);
+  const [activeApplications, setActiveApplications] = useState([]);
   const [products, setProducts] = useState([]);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [loanLimit, setLoanLimit] = useState('');
-  const [activePaymentLoan, setActivePaymentLoan] = useState(null);
 
   // Product Loan State
   const [issueCustomerId, setIssueCustomerId] = useState('');
@@ -32,8 +30,8 @@ export default function Dashboard() {
       const prodData = await apiClient('products');
       setProducts(prodData || []);
 
-      const loanData = await apiClient('loans?status=Active');
-      setActiveLoans(loanData || []);
+      const loanData = await apiClient('applications?status=Approved');
+      setActiveApplications(loanData || []);
     } catch (e) {
       console.error(e);
     }
@@ -173,20 +171,17 @@ export default function Dashboard() {
           <div>
             <h3 className="font-bold text-slate-800 text-base mb-3">Active Customer Credit Lines</h3>
             <div className="divide-y divide-slate-50 max-h-60 overflow-y-auto pr-1">
-              {activeLoans.length === 0 ? (
+              {activeApplications.length === 0 ? (
                 <p className="text-sm text-slate-400 pt-4 text-center">No open active debt positions registered.</p>
               ) : (
-                activeLoans.map(l => (
-                  <div key={l.loan_id} className="flex justify-between items-center py-3 text-sm">
+                activeApplications.map(l => (
+                  <div key={l.application_id} className="flex justify-between items-center py-3 text-sm">
                     <div>
-                      <p className="font-bold text-slate-700">{l.customers?.first_name} {l.customers?.last_name}</p>
-                      <p className="text-xs text-slate-400">Due: {l.due_date}</p>
+                      <p className="font-bold text-slate-700">{l.customer?.first_name} {l.customer?.last_name}</p>
+                      <p className="text-xs text-slate-400">{l.product?.product_name}</p>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="font-bold text-slate-800">KSh {l.balance_remaining}</span>
-                      <button onClick={() => setActivePaymentLoan(l)} className="px-3 py-1.5 bg-sky-500 text-white font-bold rounded-xl text-xs hover:bg-sky-600 shadow-sm shadow-sky-100 transition-all">
-                        Record Payment
-                      </button>
+                      <span className="font-bold text-slate-800">KSh {l.balance_remaining?.toLocaleString()}</span>
                     </div>
                   </div>
                 ))
@@ -196,9 +191,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {activePaymentLoan && (
-        <PaymentModal loan={activePaymentLoan} onClose={() => setActivePaymentLoan(null)} onPaymentSuccess={fetchDashboardData} />
-      )}
+
     </div>
   );
 }
