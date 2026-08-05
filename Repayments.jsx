@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from './apiClient';
-import { Wallet, CheckCheck, RefreshCw, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Wallet, CheckCheck, RefreshCw, AlertCircle, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 const ACTIVE_PAGE_SIZE = 5;
 const HISTORY_PAGE_SIZE = 8;
@@ -56,6 +59,67 @@ export default function Repayments() {
         setProcessing(null);
     };
 
+    const handleDownloadPDF = () => {
+        const doc = new jsPDF();
+        doc.setFontSize(16);
+        doc.text("Ledgerly - Repayments History", 14, 15);
+        doc.setFontSize(11);
+        doc.text(`Downloaded By: Admin`, 14, 25);
+        doc.text(`Date: ${new Date().toLocaleString()}`, 14, 32);
+
+        const tableData = repayments.map(r => {
+            const cust = r.application?.customer ?? r.loanApplication?.customer;
+            const prod = r.application?.product ?? r.loanApplication?.product;
+            const date = r.payment_date ?? r.paymentDate;
+            const method = r.payment_method ?? r.paymentMethod;
+            const paid = r.amount_paid ?? r.amountPaid ?? 0;
+            return [
+                cust ? `${cust.first_name ?? ''} ${cust.last_name ?? ''}`.trim() : '—',
+                prod?.product_name ?? '—',
+                date ? new Date(date).toLocaleString() : '—',
+                method || '—',
+                Number(paid).toLocaleString()
+            ];
+        });
+
+        autoTable(doc, {
+            startY: 42,
+            head: [['CUSTOMER', 'PRODUCT', 'DATE', 'CHANNEL', 'AMOUNT (KSh)']],
+            body: tableData,
+        });
+
+        doc.save(`Ledgerly_Repayments_History.pdf`);
+    };
+
+    const handleDownloadExcel = () => {
+        const exportData = repayments.map(r => {
+            const cust = r.application?.customer ?? r.loanApplication?.customer;
+            const prod = r.application?.product ?? r.loanApplication?.product;
+            const date = r.payment_date ?? r.paymentDate;
+            const method = r.payment_method ?? r.paymentMethod;
+            const paid = r.amount_paid ?? r.amountPaid ?? 0;
+            return {
+                'Customer': cust ? `${cust.first_name ?? ''} ${cust.last_name ?? ''}`.trim() : '—',
+                'Product': prod?.product_name ?? '—',
+                'Date': date ? new Date(date).toLocaleString() : '—',
+                'Channel': method || '—',
+                'Amount (KSh)': Number(paid)
+            };
+        });
+
+        const ws = XLSX.utils.json_to_sheet([
+            { A: 'Title', B: 'Ledgerly - Repayments History' },
+            { A: 'Downloaded By', B: 'Admin' },
+            { A: 'Date', B: new Date().toLocaleString() },
+            {},
+        ], { skipHeader: true });
+
+        XLSX.utils.sheet_add_json(ws, exportData, { origin: 'A5' });
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Repayments");
+        XLSX.writeFile(wb, `Ledgerly_Repayments_History.xlsx`);
+    };
+
     // ── Pagination helpers ──────────────────────────────────────────────────
     const totalPagesHistory = Math.max(1, Math.ceil(repayments.length / HISTORY_PAGE_SIZE));
     const safePageHistory = Math.min(historyPage, totalPagesHistory);
@@ -72,9 +136,18 @@ export default function Repayments() {
                     <h2 className="text-2xl font-extrabold text-slate-800">Cash Repayments</h2>
                     <p className="text-sm text-slate-400">Record customer cash payments. Balance and limit update automatically.</p>
                 </div>
-                <button onClick={fetchAll} className="p-2.5 rounded-xl border border-slate-200 text-slate-500 hover:text-sky-500 hover:border-sky-300 transition-all">
-                    <RefreshCw size={16} />
-                </button>
+                <div className="flex items-center gap-2">
+                    <button onClick={fetchAll} className="p-2.5 rounded-xl border border-slate-200 text-slate-500 hover:text-sky-500 hover:border-sky-300 transition-all">
+                        <RefreshCw size={16} />
+                    </button>
+                    <span className="text-sm font-bold text-slate-500 ml-2 mr-1 tracking-wide">Download:</span>
+                    <button onClick={handleDownloadPDF} className="flex items-center gap-2 bg-sky-500 hover:bg-sky-600 text-white px-3 py-2 rounded-xl text-sm font-bold transition-all shadow-md shadow-sky-500/20">
+                        <Download size={15} /> PDF
+                    </button>
+                    <button onClick={handleDownloadExcel} className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-2 rounded-xl text-sm font-bold transition-all shadow-md shadow-emerald-500/20">
+                        <Download size={15} /> Excel
+                    </button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">

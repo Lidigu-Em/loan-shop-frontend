@@ -5,7 +5,7 @@ import { ClipboardList, CheckCircle, XCircle, Clock, RefreshCw } from 'lucide-re
 export default function LoanApprovals() {
     const [applications, setApplications] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState('Pending');
+    const [filter, setFilter] = useState('Approved');
     const [rejectionReason, setRejectionReason] = useState({});
     const [processing, setProcessing] = useState(null);
 
@@ -63,8 +63,8 @@ export default function LoanApprovals() {
                         key={s}
                         onClick={() => setFilter(s === 'All' ? '' : s)}
                         className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${(s === 'All' ? filter === '' : filter === s)
-                                ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20'
-                                : 'bg-white text-slate-500 border border-slate-200 hover:border-sky-300'
+                            ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20'
+                            : 'bg-white text-slate-500 border border-slate-200 hover:border-sky-300'
                             }`}
                     >
                         {s}

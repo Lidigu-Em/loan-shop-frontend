@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from './apiClient';
-import { TrendingUp, Users, AlertCircle, Printer, ClipboardList, RefreshCw, CreditCard } from 'lucide-react';
+import { TrendingUp, Users, AlertCircle, Printer, ClipboardList, RefreshCw, CreditCard, Download } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 export default function Reports() {
   const [customers, setCustomers] = useState([]);
@@ -37,6 +40,127 @@ export default function Reports() {
   const approvedCount = applications.filter(a => a.status === 'Approved').length;
   const totalRepaid = repayments.reduce((sum, r) => sum + (r.amount_paid || 0), 0);
 
+
+  const handleDownloadPDF = () => {
+    const doc = new jsPDF();
+    const title = `Ledgerly - ${tabs.find(t => t.id === activeReport)?.label} Transactions`;
+    doc.setFontSize(16);
+    doc.text(title, 14, 15);
+    doc.setFontSize(11);
+    doc.text(`Downloaded By: Admin`, 14, 23);
+    doc.text(`Date: ${new Date().toLocaleString()}`, 14, 30);
+
+    let head = [];
+    let body = [];
+
+    if (activeReport === 'summary') {
+      head = [['CUSTOMER', 'PHONE', 'ALLOCATED LIMIT', 'OUTSTANDING', 'STATUS']];
+      body = customers.map(c => [
+        `${c.first_name} ${c.last_name}`,
+        c.phone_number || '—',
+        Number(c.maximum_loan_limit || 0).toLocaleString(),
+        Number(c.outstanding_balance || 0).toLocaleString(),
+        c.status
+      ]);
+    } else if (activeReport === 'loans') {
+      head = [['CUSTOMER', 'PRODUCT', 'AMOUNT (KSh)', 'STATUS', 'DATE']];
+      body = applications.map(a => [
+        `${a.customer?.first_name || ''} ${a.customer?.last_name || ''}`,
+        a.product?.product_name || '—',
+        Number(a.requested_amount).toLocaleString(),
+        a.status,
+        a.created_at ? new Date(a.created_at).toLocaleDateString() : '—'
+      ]);
+    } else if (activeReport === 'customers') {
+      head = [['CUSTOMER', 'PHONE', 'LIMIT (KSh)', 'OUTSTANDING (KSh)']];
+      body = customers.map(c => [
+        `${c.first_name} ${c.last_name}`,
+        c.phone_number || '—',
+        Number(c.maximum_loan_limit || 0).toLocaleString(),
+        Number(c.outstanding_balance || 0).toLocaleString()
+      ]);
+    } else if (activeReport === 'repayments') {
+      head = [['CUSTOMER', 'PRODUCT', 'DATE', 'CHANNEL', 'AMOUNT (KSh)']];
+      body = repayments.map(r => {
+        const cust = r.application?.customer ?? r.loanApplication?.customer;
+        const prod = r.application?.product ?? r.loanApplication?.product;
+        const date = r.payment_date ?? r.paymentDate;
+        const method = r.payment_method ?? r.paymentMethod;
+        const paid = r.amount_paid ?? r.amountPaid ?? 0;
+        return [
+          cust ? `${cust.first_name ?? ''} ${cust.last_name ?? ''}`.trim() : '—',
+          prod?.product_name ?? '—',
+          date ? new Date(date).toLocaleDateString() : '—',
+          method || '—',
+          Number(paid).toLocaleString()
+        ];
+      });
+    }
+
+    autoTable(doc, {
+      startY: 38,
+      head: head,
+      body: body,
+    });
+    doc.save(`Ledgerly_${activeReport}_Transactions.pdf`);
+  };
+
+  const handleDownloadExcel = () => {
+    let exportData = [];
+
+    if (activeReport === 'summary') {
+      exportData = customers.map(c => ({
+        'Customer': `${c.first_name} ${c.last_name}`,
+        'Phone': c.phone_number || '—',
+        'Allocated Limit': Number(c.maximum_loan_limit || 0),
+        'Outstanding': Number(c.outstanding_balance || 0),
+        'Status': c.status
+      }));
+    } else if (activeReport === 'loans') {
+      exportData = applications.map(a => ({
+        'Customer': `${a.customer?.first_name || ''} ${a.customer?.last_name || ''}`,
+        'Product': a.product?.product_name || '—',
+        'Amount (KSh)': Number(a.requested_amount),
+        'Status': a.status,
+        'Date': a.created_at ? new Date(a.created_at).toLocaleDateString() : '—'
+      }));
+    } else if (activeReport === 'customers') {
+      exportData = customers.map(c => ({
+        'Customer': `${c.first_name} ${c.last_name}`,
+        'Phone': c.phone_number || '—',
+        'Limit (KSh)': Number(c.maximum_loan_limit || 0),
+        'Outstanding (KSh)': Number(c.outstanding_balance || 0)
+      }));
+    } else if (activeReport === 'repayments') {
+      exportData = repayments.map(r => {
+        const cust = r.application?.customer ?? r.loanApplication?.customer;
+        const prod = r.application?.product ?? r.loanApplication?.product;
+        const date = r.payment_date ?? r.paymentDate;
+        const method = r.payment_method ?? r.paymentMethod;
+        const paid = r.amount_paid ?? r.amountPaid ?? 0;
+        return {
+          'Customer': cust ? `${cust.first_name ?? ''} ${cust.last_name ?? ''}`.trim() : '—',
+          'Product': prod?.product_name ?? '—',
+          'Date': date ? new Date(date).toLocaleDateString() : '—',
+          'Channel': method || '—',
+          'Amount (KSh)': Number(paid)
+        };
+      });
+    }
+
+    const ws = XLSX.utils.json_to_sheet([
+      { A: 'Title', B: `Ledgerly - ${tabs.find(t => t.id === activeReport)?.label} Transactions` },
+      { A: 'Downloaded By', B: `Admin` },
+      { A: 'Date', B: new Date().toLocaleString() },
+      {},
+    ], { skipHeader: true });
+
+    XLSX.utils.sheet_add_json(ws, exportData, { origin: 'A5' });
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Transactions");
+    XLSX.writeFile(wb, `Ledgerly_${activeReport}_Transactions.xlsx`);
+  };
+
   const tabs = [
     { id: 'summary', label: 'Summary', icon: TrendingUp },
     { id: 'loans', label: 'Loan Applications', icon: ClipboardList },
@@ -56,9 +180,15 @@ export default function Reports() {
           <button onClick={fetchAll} className="p-2.5 rounded-xl border border-slate-200 text-slate-500 hover:text-sky-500 hover:border-sky-300 transition-all">
             <RefreshCw size={16} />
           </button>
-          <button onClick={() => window.print()} className="flex items-center gap-2 bg-sky-500 hover:bg-sky-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-sky-500/20">
-            <Printer size={15} /> Print Report
-          </button>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-slate-500 mr-1">Download:</span>
+            <button onClick={handleDownloadPDF} className="flex items-center gap-2 bg-sky-500 hover:bg-sky-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-sky-500/20">
+              <Download size={15} /> PDF
+            </button>
+            <button onClick={handleDownloadExcel} className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-emerald-500/20">
+              <Download size={15} /> Excel
+            </button>
+          </div>
         </div>
       </div>
 

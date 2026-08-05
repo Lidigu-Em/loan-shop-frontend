@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from './apiClient';
-import { Package, ChevronRight, Clock, RefreshCw, Printer } from 'lucide-react';
+import { Package, ChevronRight, Clock, RefreshCw, Printer, Download } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 export default function CustomerPortal() {
     const [activeTab, setActiveTab] = useState('apply');
@@ -50,9 +53,80 @@ export default function CustomerPortal() {
         }
     };
 
-    const handlePrint = () => {
-        window.print();
+
+    const handleDownloadPDF = () => {
+        const doc = new jsPDF();
+        doc.setFontSize(16);
+        doc.text("Ledgerly - Customer Transactions", 14, 15);
+        doc.setFontSize(11);
+        doc.text(`Downloaded By: ${profile.first_name} ${profile.last_name}`, 14, 25);
+        doc.text(`Role: Customer`, 14, 32);
+        doc.text(`Date: ${new Date().toLocaleString()}`, 14, 39);
+
+        if (activeTab === 'requests') {
+            doc.text("Loan Request History", 14, 49);
+            const tableData = applications.map(app => [
+                app.product?.product_name || 'Loan Application',
+                Number(app.requested_amount).toLocaleString(),
+                app.status
+            ]);
+            autoTable(doc, {
+                startY: 54,
+                head: [['PRODUCT', 'AMOUNT (KSh)', 'STATUS']],
+                body: tableData,
+            });
+        } else if (activeTab === 'repayments') {
+            doc.text("Payment History", 14, 49);
+            const tableData = repayments.map(r => [
+                r.application?.product?.product_name || '—',
+                r.payment_date ? new Date(r.payment_date).toLocaleString() : '—',
+                Number(r.amount_paid).toLocaleString()
+            ]);
+            autoTable(doc, {
+                startY: 54,
+                head: [['PRODUCT', 'DATE', 'PAID (KSh)']],
+                body: tableData,
+            });
+        } else {
+            alert("Switch to Requests or Payments tab to download transactions.");
+            return;
+        }
+
+        doc.save(`Ledgerly_${activeTab}_Transactions.pdf`);
     };
+
+    const handleDownloadExcel = () => {
+        let exportData = [];
+        if (activeTab === 'requests') {
+            exportData = applications.map(app => ({
+                'Product': app.product?.product_name || 'Loan Application',
+                'Amount (KSh)': Number(app.requested_amount),
+                'Status': app.status
+            }));
+        } else if (activeTab === 'repayments') {
+            exportData = repayments.map(r => ({
+                'Product': r.application?.product?.product_name || '—',
+                'Date': r.payment_date ? new Date(r.payment_date).toLocaleString() : '—',
+                'Paid (KSh)': Number(r.amount_paid)
+            }));
+        } else {
+            alert("Switch to Requests or Payments tab to download transactions.");
+            return;
+        }
+
+        const ws = XLSX.utils.json_to_sheet([
+            { A: 'Title', B: 'Ledgerly - Customer Transactions' },
+            { A: 'Downloaded By', B: `${profile.first_name} ${profile.last_name}` },
+            { A: 'Date', B: new Date().toLocaleString() },
+            {},
+        ], { skipHeader: true });
+
+        XLSX.utils.sheet_add_json(ws, exportData, { origin: 'A5' });
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Transactions");
+        XLSX.writeFile(wb, `Ledgerly_${activeTab}_Transactions.xlsx`);
+    };
+
 
     const statusColor = (status) => {
         if (status === 'Approved') return 'bg-emerald-100 text-emerald-700';
@@ -87,9 +161,15 @@ export default function CustomerPortal() {
                         <button onClick={fetchData} className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-all" title="Refresh">
                             <RefreshCw size={16} />
                         </button>
-                        <button onClick={handlePrint} className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-xl text-sm font-bold transition-all" title="Print Statement">
-                            <Printer size={15} /> Print Statement
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-white/80 mr-1 tracking-wide">Download:</span>
+                            <button onClick={handleDownloadPDF} className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-3 py-2 rounded-xl text-sm font-bold transition-all" title="Download PDF">
+                                <Download size={15} /> PDF
+                            </button>
+                            <button onClick={handleDownloadExcel} className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-3 py-2 rounded-xl text-sm font-bold transition-all" title="Download Excel">
+                                <Download size={15} /> Excel
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
