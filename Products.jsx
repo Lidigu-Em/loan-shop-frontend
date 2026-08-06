@@ -130,16 +130,16 @@ export default function Products() {
                     </div>
                     <div>
                         <label className="block text-xs font-bold text-slate-400 mb-1">CASH PRICE (KSh) *</label>
-                        <input type="number" value={price} onChange={e => setPrice(e.target.value)} required className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-sky-500" placeholder="50000" />
+                        <input type="number" min="0" value={price} onChange={e => setPrice(e.target.value)} required className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-sky-500" placeholder="50000" />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <label className="block text-xs font-bold text-slate-400 mb-1">MAX LOAN</label>
-                            <input type="number" value={maximumLoanAmount} onChange={e => setMaximumLoanAmount(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-sky-500" placeholder="40000" />
+                            <input type="number" min="0" value={maximumLoanAmount} onChange={e => setMaximumLoanAmount(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-sky-500" placeholder="40000" />
                         </div>
                         <div>
                             <label className="block text-xs font-bold text-slate-400 mb-1">INTEREST (%)</label>
-                            <input type="number" value={interestRate} onChange={e => setInterestRate(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-sky-500" placeholder="12" />
+                            <input type="number" min="0" value={interestRate} onChange={e => setInterestRate(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-sky-500" placeholder="12" />
                         </div>
                     </div>
                     <div>

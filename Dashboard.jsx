@@ -126,7 +126,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-400 mb-1">INITIAL LOAN LIMIT (KSh)</label>
-                <input type="number" placeholder="Optional limit" value={loanLimit} onChange={e => setLoanLimit(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-sky-500" />
+                <input type="number" min="0" placeholder="Optional limit" value={loanLimit} onChange={e => setLoanLimit(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-sky-500" />
               </div>
               <button type="submit" className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-2.5 rounded-xl text-sm transition-all shadow-md shadow-sky-50">
                 Register Customer
@@ -157,7 +157,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-400 mb-1">LOAN AMOUNT (KSh)</label>
-                <input type="number" placeholder="Defaults to product price" value={issueAmount} onChange={e => setIssueAmount(e.target.value)} required className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-sky-500" />
+                <input type="number" min="0" placeholder="Defaults to product price" value={issueAmount} onChange={e => setIssueAmount(e.target.value)} required className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-sky-500" />
               </div>
               <button type="submit" className="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl text-sm transition-all shadow-md">
                 Issue Product

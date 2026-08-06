@@ -236,6 +236,7 @@ export default function CustomerPortal() {
                             <label className="block text-xs font-bold text-slate-400 mb-2">HOW MUCH DO YOU NEED? (KSh)</label>
                             <input
                                 type="number"
+                                min="0"
                                 value={requestedAmount}
                                 onChange={e => setRequestedAmount(e.target.value)}
                                 max={Math.min(selectedProduct.maximum_loan_amount, profile.maximum_loan_limit)}
